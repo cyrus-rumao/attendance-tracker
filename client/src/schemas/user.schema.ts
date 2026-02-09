@@ -14,8 +14,8 @@ export const SignupInputSchema = z
 	.object({
 		name: z.string().min(2),
 		email: z.email(),
-		password: z.string().min(8),
-		confirmPassword: z.string().min(8),
+		password: z.string().min(6),
+		confirmPassword: z.string().min(6),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
 		message: 'Passwords do not match',

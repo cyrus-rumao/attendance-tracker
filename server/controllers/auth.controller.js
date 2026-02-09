@@ -50,8 +50,11 @@ const setCookies = (res, accessToken, refreshToken) => {
 };
 
 export const signup = async (req, res) => {
-	const { name, email, password } = req.body;
+	const { name, email, password, confirmPassword } = req.body;
 	console.log('Signup Request', req.body);
+	if (password !== confirmPassword) {
+		return res.status(400).json({ message: 'Passwords do not match' });
+	}	
 	try {
 		const existinguser = await User.findOne({ email });
 		if (existinguser) {
@@ -72,9 +75,10 @@ export const signup = async (req, res) => {
 		return res.status(201).json({
 			_id: user._id,
 			name: user.name,
-			//REMOVE THIS PASSOWRD IN DEPLOYMENT
-			password: user.password,
 			email: user.email,
+			createdAt: user.createdAt,
+			updatedAt: user.updatedAt,
+			__v: user.__v,
 		});
 	} catch (error) {
 		console.log(error);

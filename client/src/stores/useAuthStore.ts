@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import axios from '../lib/axios';
 import { notify } from '../lib/utils';
 
-// ---------- TYPES ----------
 import {
 	UserSchema,
 	SignupInputSchema,
@@ -22,20 +21,17 @@ interface AuthStore {
 	login: (data: LoginInput) => Promise<boolean>;
 	logout: () => Promise<void>;
 	checkAuth: () => Promise<void>;
-	refreshToken: () => Promise<void>;
 }
 
-// ---------- STORE ----------
 export const useAuthStore = create<AuthStore>((set, get) => ({
 	user: null,
 	loading: false,
 	checkingAuth: true,
 
-	// ---------- SIGNUP ----------
 	signup: async (data) => {
 		set({ loading: true });
 		const paresedInput = SignupInputSchema.safeParse(data);
-		console.log('Parsed input:', paresedInput);
+		console.log('Parsed input:', paresedInput.data);
 		if (!paresedInput.success) {
 			set({ loading: false });
 			notify.error('Invalid signup data');
@@ -56,7 +52,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 		}
 	},
 
-	// ---------- LOGIN ----------
 	login: async (data) => {
 		// console.log('Data: ', data);
 		set({ loading: true });
@@ -83,40 +78,19 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 		}
 	},
 
-	// ---------- LOGOUT ----------
-	logout: async (silent = false) => {
-		try {
-			await axios.post('/auth/logout');
-		} catch (e) {
-			if (!silent) notify.error('Logout error');
-		} finally {
-			set({ user: null });
-		}
+	logout: async () => {
+		await axios.post('/auth/logout');
+		set({ user: null });
 	},
 
-	// ---------- CHECK AUTH ----------
 	checkAuth: async () => {
-		if (get().user) {
-			set({ checkingAuth: false });
-			return;
-		}
-
 		set({ checkingAuth: true });
 		try {
 			const res = await axios.get('/auth/profile');
 			const user = UserSchema.parse(res.data);
 			set({ user, checkingAuth: false });
 		} catch {
-			set({ checkingAuth: false });
+			set({ user: null, checkingAuth: false });
 		}
-	},
-
-	// ---------- REFRESH TOKEN ----------
-	refreshToken: async () => {
-		// if (get().checkingAuth) return;
-
-		// set({ checkingAuth: true });
-
-		await axios.post('/auth/refresh-token');
 	},
 }));
