@@ -1,6 +1,6 @@
 import Timetable from '../models/timetable.model.js';
 import Subject from '../models/subject.model.js';
-
+import {Request, Response} from 'express';
 /* ---------------- HELPERS ---------------- */
 
 const DAYS = [
@@ -39,7 +39,7 @@ const hasOverlap = (slots) => {
 };
 
 
-export const saveTimetable = async (req, res) => {
+export const saveTimetable = async (req: Request, res: Response) => {
 	try {
 		const userId = req.user._id;
 
@@ -86,7 +86,7 @@ export const saveTimetable = async (req, res) => {
 	}
 };
 
-export const getTimetable = async (req, res) => {
+export const getTimetable = async (req: Request, res: Response) => {
 	try {
 		const userId = req.user._id;
 		const timetable = await Timetable.findOne({ userId })
@@ -108,7 +108,7 @@ export const getTimetable = async (req, res) => {
 	}
 };
 
-export const deleteTimetable = async (req, res) => {
+export const deleteTimetable = async (req: Request, res: Response) => {
 	try {
 		const userId = req.user._id;
 

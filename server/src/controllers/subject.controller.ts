@@ -1,6 +1,7 @@
 import Subject from '../models/subject.model.js';
+import {Request, Response} from 'express';
 import Timetable from '../models/timetable.model.js';
-export const createSubject = async (req, res) => {
+export const createSubject = async (req: Request, res: Response) => {
 	try {
 		console.log('User ', req.user);
 		const subject = await Subject.create({
@@ -15,12 +16,12 @@ export const createSubject = async (req, res) => {
 	}
 };
 
-export const getSubjects = async (req, res) => {
+export const getSubjects = async (req: Request, res: Response) => {
 	const subjects = await Subject.find({ userId: req.user._id });
 	res.json(subjects);
 };
 
-export const updateSubject = async (req, res) => {
+export const updateSubject = async (req: Request, res: Response) => {
 	try {
 		const userId = req.user._id;
 		const { id } = req.params;
@@ -50,7 +51,7 @@ const DAYS = [
 	'saturday',
 ];
 
-export const deleteSubject = async (req, res) => {
+export const deleteSubject = async (req: Request, res: Response) => {
 	try {
 		const userId = req.user._id;
 		const { id: subjectId } = req.params;

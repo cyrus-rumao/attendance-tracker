@@ -1,8 +1,7 @@
 import Attendance from '../models/attendance.model.js';
 import Subject from '../models/subject.model.js';
-import Timetable from '../models/timetable.model.js';
-
-export const markAttendance = async (req, res) => {
+import { Request, Response } from 'express';
+export const markAttendance = async (req: Request, res: Response) => {
 	try {
 		const userId = req.user._id;
 		const { subjectId, date, startTime, endTime, status } = req.body;
@@ -10,16 +9,16 @@ export const markAttendance = async (req, res) => {
 		const today = new Date().toISOString().split('T')[0];
 		if (date > today) {
 			return res.status(400).json({ message: 'Cannot mark future attendance' });
-    }
-    
+		}
+
 		const subject = await Subject.findOne({ _id: subjectId, userId });
 		if (!subject) {
 			return res.status(404).json({ message: 'Invalid subject' });
 		}
 
-    const hours = subject.type === 'lab' ? 2 : 1;
-    
-    const attendance = await Attendance.create({
+		const hours = subject.type === 'lab' ? 2 : 1;
+
+		const attendance = await Attendance.create({
 			userId,
 			subjectId,
 			date,
@@ -42,7 +41,7 @@ export const markAttendance = async (req, res) => {
 	}
 };
 
-export const getAttendanceByDate = async (req, res) => {
+export const getAttendanceByDate = async (req: Request, res: Response) => {
 	const userId = req.user._id;
 	const { date } = req.query;
 
@@ -54,8 +53,7 @@ export const getAttendanceByDate = async (req, res) => {
 	res.json(attendance);
 };
 
-
-export const deleteAttendance = async (req, res) => {
+export const deleteAttendance = async (req: Request, res: Response) => {
 	const userId = req.user._id;
 	const { id } = req.params;
 
@@ -67,8 +65,7 @@ export const deleteAttendance = async (req, res) => {
 	res.json({ message: 'Attendance deleted' });
 };
 
-
-export const getAttendanceSummary = async (req, res) => {
+export const getAttendanceSummary = async (req: Request, res: Response) => {
 	const userId = req.user._id;
 
 	const records = await Attendance.find({
