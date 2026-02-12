@@ -1,9 +1,23 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document, Model, Query } from 'mongoose';
 
-const subjectSchema = new mongoose.Schema(
+/* ---------------- TYPES ---------------- */
+
+export type SubjectType = 'lecture' | 'lab';
+
+export interface ISubject extends Document {
+	userId: mongoose.Types.ObjectId;
+	name: string;
+	code?: string;
+	type: SubjectType;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+/* ---------------- SCHEMA ---------------- */
+const subjectSchema = new Schema<ISubject>(
 	{
 		userId: {
-			type: mongoose.Schema.Types.ObjectId,
+			type: Schema.Types.ObjectId,
 			ref: 'User',
 			required: true,
 		},
@@ -11,12 +25,12 @@ const subjectSchema = new mongoose.Schema(
 		name: {
 			type: String,
 			required: true,
-			unique: true,
 			trim: true,
-			uppercase: true,
 		},
+
 		code: {
 			type: String,
+			trim: true,
 		},
 
 		type: {
@@ -28,4 +42,28 @@ const subjectSchema = new mongoose.Schema(
 	{ timestamps: true },
 );
 
-export default mongoose.model('Subject', subjectSchema);
+subjectSchema.pre('validate', function (this: ISubject) {
+	if (this.name) {
+		this.name = this.name.trim().toUpperCase();
+	}
+});
+
+subjectSchema.pre(
+	'findOneAndUpdate',
+	function (this:ISubject) {
+		if (this.name) {
+			this.name = this.name.trim().toUpperCase();
+		}
+	},
+);	
+
+subjectSchema.index({ userId: 1, name: 1 }, { unique: true });
+
+/* ---------------- MODEL ---------------- */
+
+const Subject: Model<ISubject> = mongoose.model<ISubject>(
+	'Subject',
+	subjectSchema,
+);
+
+export default Subject;

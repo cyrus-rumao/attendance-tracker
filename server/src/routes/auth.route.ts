@@ -1,6 +1,9 @@
 // import Router from 'express';
-import express from 'express';
-import { loginValidation, signupValidation } from '../middlewares/validation.middleware.js';
+import { Router } from 'express';
+import {
+	loginValidation,
+	signupValidation,
+} from '../middlewares/validation.middleware.js';
 import {
 	login,
 	signup,
@@ -10,7 +13,7 @@ import {
 } from '../controllers/auth.controller.js';
 // import { get } from 'mongoose';
 import { protectRoute } from '../middlewares/auth.middleware.js';
-const router = express.Router();
+const router = Router();
 router.post('/login', loginValidation, login);
 router.post('/signup', signupValidation, signup);
 router.post('/logout', logout);

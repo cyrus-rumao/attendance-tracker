@@ -56,7 +56,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 		// console.log('Data: ', data);
 		set({ loading: true });
 		const parsedInput = LoginInputSchema.safeParse(data);
-		// console.log('parsed input: ', parsedInput.data);
 		if (!parsedInput.success) {
 			set({ loading: false });
 			notify.error('Invalid login data');
@@ -64,12 +63,19 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 		}
 		try {
 			const res = await axios.post('/auth/login', parsedInput.data);
+			if (!res.data.user) {
+				set({ loading: false });
+				notify.error('Login response missing user');
+				return false;
+			}
 			const user = UserSchema.parse(res.data.user);
+
 			console.log('Setting user in login()', user);
 			set({ user, loading: false });
 			notify.success('Login successful');
 			return true;
 		} catch (error: any) {
+			console.log('Error: ', error);
 			console.log('hahaha');
 			// const err = error as AxiosError<{ message?: string }>;
 			notify.error(error.response?.data?.message || 'Login failed');

@@ -1,4 +1,4 @@
-import express from 'express';
+import {Router} from 'express';
 import {
 	saveTimetable,
 	getTimetable,
@@ -7,7 +7,7 @@ import {
 } from '../controllers/timetable.controller.js';
 import { protectRoute } from '../middlewares/auth.middleware.js';
 
-const router = express.Router();
+const router = Router();
 
 router.post('/', protectRoute, saveTimetable);
 router.get('/', protectRoute, getTimetable);

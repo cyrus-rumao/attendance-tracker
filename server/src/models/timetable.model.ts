@@ -1,35 +1,72 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
-const slotSchema = new mongoose.Schema(
+/* ---------------- TYPES ---------------- */
+
+export interface ITimetableSlot {
+	subjectId: mongoose.Types.ObjectId;
+	startTime: string; // "09:00"
+	endTime: string; // "10:00"
+}
+
+export interface ITimetable extends Document {
+	userId: mongoose.Types.ObjectId;
+
+	monday: ITimetableSlot[];
+	tuesday: ITimetableSlot[];
+	wednesday: ITimetableSlot[];
+	thursday: ITimetableSlot[];
+	friday: ITimetableSlot[];
+	saturday: ITimetableSlot[];
+
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+/* ---------------- SCHEMAS ---------------- */
+
+const slotSchema = new Schema<ITimetableSlot>(
 	{
 		subjectId: {
-			type: mongoose.Schema.Types.ObjectId,
+			type: Schema.Types.ObjectId,
 			ref: 'Subject',
 			required: true,
 		},
-		startTime: String, // "09:00"
-		endTime: String, // "10:00"
+		startTime: {
+			type: String,
+			required: true,
+		},
+		endTime: {
+			type: String,
+			required: true,
+		},
 	},
 	{ _id: false },
 );
 
-const timetableSchema = new mongoose.Schema(
+const timetableSchema = new Schema<ITimetable>(
 	{
 		userId: {
-			type: mongoose.Schema.Types.ObjectId,
+			type: Schema.Types.ObjectId,
 			ref: 'User',
 			required: true,
 			unique: true,
 		},
 
-		monday: [slotSchema],
-		tuesday: [slotSchema],
-		wednesday: [slotSchema],
-		thursday: [slotSchema],
-		friday: [slotSchema],
-		saturday: [slotSchema],
+		monday: { type: [slotSchema], default: [] },
+		tuesday: { type: [slotSchema], default: [] },
+		wednesday: { type: [slotSchema], default: [] },
+		thursday: { type: [slotSchema], default: [] },
+		friday: { type: [slotSchema], default: [] },
+		saturday: { type: [slotSchema], default: [] },
 	},
 	{ timestamps: true },
 );
 
-export default mongoose.model('Timetable', timetableSchema);
+/* ---------------- MODEL ---------------- */
+
+const Timetable: Model<ITimetable> = mongoose.model<ITimetable>(
+	'Timetable',
+	timetableSchema,
+);
+
+export default Timetable;

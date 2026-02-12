@@ -1,30 +1,74 @@
 import Subject from '../models/subject.model.js';
-import {Request, Response} from 'express';
-import Timetable from '../models/timetable.model.js';
-export const createSubject = async (req: Request, res: Response) => {
+import Timetable, { ITimetableSlot } from '../models/timetable.model.js';
+import { Request, Response } from 'express';
+import mongoose from 'mongoose';
+
+/* ---------------- CONSTANTS ---------------- */
+
+const DAYS = [
+	'monday',
+	'tuesday',
+	'wednesday',
+	'thursday',
+	'friday',
+	'saturday',
+] as const;
+
+type Day = (typeof DAYS)[number];
+
+/* ---------------- CONTROLLERS ---------------- */
+
+export const createSubject = async (
+	req: Request,
+	res: Response,
+): Promise<Response> => {
 	try {
-		console.log('User ', req.user);
+		const userId = req.user!._id;
+
 		const subject = await Subject.create({
-			userId: req.user._id,
+			userId,
 			...req.body,
 		});
 
-		res.status(201).json(subject);
+		return res.status(201).json(subject);
 	} catch (err) {
-		console.log(err);
-		res.status(500).json({ message: 'Failed to create subject' });
+		console.error(err);
+		return res.status(500).json({ message: 'Failed to create subject' });
 	}
 };
 
-export const getSubjects = async (req: Request, res: Response) => {
-	const subjects = await Subject.find({ userId: req.user._id });
-	res.json(subjects);
+export const getSubjects = async (
+	req: Request,
+	res: Response,
+): Promise<Response> => {
+	try {
+		const userId = req.user!._id;
+
+		const subjects = await Subject.find({ userId });
+
+		return res.json(subjects);
+	} catch (error) {
+		console.error(error);
+		return res.status(500).json({ message: 'Failed to fetch subjects' });
+	}
 };
 
-export const updateSubject = async (req: Request, res: Response) => {
+export const updateSubject = async (
+	req: Request,
+	res: Response,
+): Promise<Response> => {
 	try {
-		const userId = req.user._id;
+		const userId = req.user!._id;
 		const { id } = req.params;
+
+		if (Array.isArray(id)) {
+			return res.status(400).json({ message: 'Invalid subject id' });
+		}
+
+		if (!mongoose.Types.ObjectId.isValid(id)) {
+			return res.status(400).json({ message: 'Invalid subject id' });
+		}
+
 
 		const subject = await Subject.findOneAndUpdate(
 			{ _id: id, userId },
@@ -36,29 +80,32 @@ export const updateSubject = async (req: Request, res: Response) => {
 			return res.status(404).json({ message: 'Subject not found' });
 		}
 
-		res.json(subject);
+		return res.json(subject);
 	} catch (err) {
 		console.error(err);
-		res.status(500).json({ message: 'Failed to update subject' });
+		return res.status(500).json({ message: 'Failed to update subject' });
 	}
 };
-const DAYS = [
-	'monday',
-	'tuesday',
-	'wednesday',
-	'thursday',
-	'friday',
-	'saturday',
-];
 
-export const deleteSubject = async (req: Request, res: Response) => {
+export const deleteSubject = async (
+	req: Request,
+	res: Response,
+): Promise<Response> => {
 	try {
-		const userId = req.user._id;
-		const { id: subjectId } = req.params;
+		const userId = req.user!._id;
+		const { id } = req.params;
+
+		if (Array.isArray(id)) {
+			return res.status(400).json({ message: 'Invalid subject id' });
+		}
+
+		if (!mongoose.Types.ObjectId.isValid(id)) {
+			return res.status(400).json({ message: 'Invalid subject id' });
+		}
 
 		// Delete subject (must belong to user)
 		const subject = await Subject.findOneAndDelete({
-			_id: subjectId,
+			_id: id,
 			userId,
 		});
 
@@ -70,20 +117,20 @@ export const deleteSubject = async (req: Request, res: Response) => {
 		const timetable = await Timetable.findOne({ userId });
 
 		if (timetable) {
-			DAYS.forEach((day) => {
+			DAYS.forEach((day: Day) => {
 				timetable[day] = timetable[day].filter(
-					(slot) => slot.subjectId.toString() !== subjectId,
+					(slot: ITimetableSlot) => slot.subjectId.toString() !== id,
 				);
 			});
 
 			await timetable.save();
 		}
 
-		res.json({
+		return res.json({
 			message: 'Subject deleted and removed from timetable',
 		});
 	} catch (error) {
 		console.error('Delete subject error:', error);
-		res.status(500).json({ message: 'Failed to delete subject' });
+		return res.status(500).json({ message: 'Failed to delete subject' });
 	}
 };

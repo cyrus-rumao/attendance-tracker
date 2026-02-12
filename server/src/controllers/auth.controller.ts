@@ -108,11 +108,20 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
 		const { accessToken, refreshToken } = generateTokens(user._id.toString());
 		await storeRefreshToken(refreshToken, user._id.toString());
 		setCookies(res, accessToken, refreshToken);
-
+		console.log('HAHAH');
 		return res.status(200).json({
 			success: true,
 			message: 'Login successful',
+			user: {
+				_id: user._id,
+				name: user.name,
+				email: user.email,
+				createdAt: user.createdAt,
+				updatedAt: user.updatedAt,
+				__v: user.__v,
+			},
 		});
+
 	} catch (error) {
 		console.error(error);
 		return res.status(500).json({ message: 'Login failed' });

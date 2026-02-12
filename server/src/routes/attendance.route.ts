@@ -1,4 +1,4 @@
-import express from 'express';
+import { Router } from 'express';
 import {
 	markAttendance,
 	getAttendanceByDate,
@@ -7,7 +7,7 @@ import {
 } from '../controllers/attendance.controller.js';
 import { protectRoute } from '../middlewares/auth.middleware.js';
 
-const router = express.Router();
+const router = Router();
 
 router.post('/', protectRoute, markAttendance);
 router.get('/', protectRoute, getAttendanceByDate);

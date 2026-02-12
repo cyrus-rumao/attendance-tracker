@@ -1,4 +1,4 @@
-import express from 'express';
+import {Router} from 'express';
 import {
 	createSubject,
 	getSubjects,
@@ -7,7 +7,7 @@ import {
 } from '../controllers/subject.controller.js';
 import { protectRoute } from '../middlewares/auth.middleware.js';
 
-const router = express.Router();
+const router = Router();
 
 router.post('/', protectRoute, createSubject);
 router.get('/', protectRoute, getSubjects);
