@@ -1,9 +1,10 @@
-import {Router} from 'express';
+import { Router } from 'express';
 import {
 	createSubject,
 	getSubjects,
 	updateSubject,
 	deleteSubject,
+	getFullSubjectAnalytics,
 } from '../controllers/subject.controller.js';
 import { protectRoute } from '../middlewares/auth.middleware.js';
 
@@ -13,5 +14,5 @@ router.post('/', protectRoute, createSubject);
 router.get('/', protectRoute, getSubjects);
 router.put('/:id', protectRoute, updateSubject);
 router.delete('/:id', protectRoute, deleteSubject);
-
+router.get('/:id', protectRoute, getFullSubjectAnalytics);
 export default router;

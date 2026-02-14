@@ -1,15 +1,5 @@
 import { z } from 'zod';
-
-export const SubjectSchema = z.object({
-	_id: z.string(),
-	userId: z.string(),
-	name: z.string(),
-	code: z.string(),
-	type: z.enum(['lecture', 'lab']),
-	createdAt: z.string(),
-	updatedAt: z.string(),
-	__v: z.number(),
-});
+import { SubjectSchema } from './subject.schema';
 
 export const TimetableSlotSchema = z.object({
 	subjectId: SubjectSchema, // populated subject
@@ -35,6 +25,6 @@ export const TimetableSchema = z.object({
 	sunday: DaySchema.optional(),
 });
 
-export type Subject = z.infer<typeof SubjectSchema>;
+// export type Subject = z.infer<typeof SubjectSchema>;
 export type TimetableSlot = z.infer<typeof TimetableSlotSchema>;
 export type Timetable = z.infer<typeof TimetableSchema>;

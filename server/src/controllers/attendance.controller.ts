@@ -162,7 +162,10 @@ export const getAttendanceSummary = async (
 		userId,
 		status: { $ne: 'cancelled' },
 	}).populate('subjectId', 'name code type');
-
+console.log(records)
+	if (records.length === 0) {
+		return res.status(404).json({ message: 'No records Found' });
+	}
 	const summary: Record<
 		string,
 		{

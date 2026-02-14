@@ -13,5 +13,5 @@ router.post('/', protectRoute, markAttendance);
 router.get('/', protectRoute, getAttendanceByDate);
 router.get('/summary', protectRoute, getAttendanceSummary);
 router.delete('/:id', protectRoute, deleteAttendance);
-
+router.get('/summary', protectRoute, getAttendanceSummary);
 export default router;
