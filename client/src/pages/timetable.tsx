@@ -1,68 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, BookOpen, FlaskConical, Coffee } from 'lucide-react';
-import axios from '../lib/axios';
-
-interface Subject {
-	_id: string;
-	userId: string;
-	name: string;
-	code: string;
-	type: 'lecture' | 'lab';
-	createdAt: string;
-	updatedAt: string;
-	__v: number;
-}
-
-interface TimeSlot {
-	subjectId: Subject;
-	startTime: string;
-	endTime: string;
-}
-
-interface TimetableData {
-	_id: string;
-	userId: string;
-	monday: TimeSlot[];
-	tuesday: TimeSlot[];
-	wednesday: TimeSlot[];
-	thursday: TimeSlot[];
-	friday: TimeSlot[];
-	saturday?: TimeSlot[];
-	sunday?: TimeSlot[];
-	createdAt: string;
-	updatedAt: string;
-	__v: number;
-}
+import { useTimetableStore } from '../stores/useTimetableStore';
+import type { TimetableSlot } from '../schemas/timetable.schema';
 
 const Timetable: React.FC = () => {
 	const navigate = useNavigate();
-	const [timetable, setTimetable] = useState<TimetableData | null>(null);
-	const [loading, setLoading] = useState<boolean>(true);
+	const { timetable, loading, getTimetable } = useTimetableStore();
 
-	// Define time slots based on the college timetable
-	const timeSlots = [
-		{ start: '08:00', end: '09:00', label: '8:00 - 9:00 AM' },
-		{ start: '09:00', end: '10:00', label: '9:00 - 10:00 AM' },
-		{ start: '10:00', end: '11:00', label: '10:00 - 11:00 AM' },
-		{ start: '11:00', end: '12:00', label: '11:00 - 12:00 PM' },
-		{ start: '12:00', end: '13:00', label: '12:00 - 1:00 PM' },
-		{ start: '13:00', end: '14:00', label: '1:00 - 2:00 PM' },
-		{ start: '14:00', end: '15:00', label: '2:00 - 3:00 PM' },
-		{ start: '15:00', end: '16:00', label: '3:00 - 4:00 PM' },
-		{ start: '16:00', end: '17:00', label: '4:00 - 5:00 PM' },
-		{ start: '17:00', end: '18:00', label: '5:00 - 6:00 PM' },
-	];
+	// Generate time slots in 30-minute increments from 8:00 AM to 6:00 PM
+	const generateTimeSlots = () => {
+		const slots = [];
+		for (let hour = 8; hour < 18; hour++) {
+			slots.push(`${hour.toString().padStart(2, '0')}:00`);
+			slots.push(`${hour.toString().padStart(2, '0')}:30`);
+		}
+		slots.push('18:00'); // Add final slot
+		return slots;
+	};
 
-	const days: Array<keyof TimetableData> = [
-		'monday',
-		'tuesday',
-		'wednesday',
-		'thursday',
-		'friday',
-		'saturday',
-	];
+	const timeSlots = generateTimeSlots();
+
+	const days: Array<
+		'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday'
+	> = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
 	const dayLabels = [
 		'Monday',
 		'Tuesday',
@@ -73,69 +36,45 @@ const Timetable: React.FC = () => {
 	];
 
 	useEffect(() => {
-		const fetchTimetable = async () => {
-			try {
-				setLoading(true);
-				const response = await axios.get('/timetable');
-				setTimetable(response.data);
-			} catch (error) {
-				console.error('Error fetching timetable:', error);
-			} finally {
-				setLoading(false);
-			}
-		};
+		getTimetable();
+	}, [getTimetable]);
 
-		fetchTimetable();
-	}, []);
-
-	// Find subject for a specific day and time slot
-	const getSubjectForSlot = (
-		day: keyof TimetableData,
-		slotStart: string,
-	): TimeSlot | null => {
-		if (!timetable) return null;
-
-		const daySchedule = timetable[day] as TimeSlot[] | undefined;
-		if (!daySchedule || !Array.isArray(daySchedule)) return null;
-
-		// Find a class that starts at or before this time and ends after this time
-		return (
-			daySchedule.find((slot) => {
-				const classStart = slot.startTime;
-				const classEnd = slot.endTime;
-				return classStart <= slotStart && classEnd > slotStart;
-			}) || null
-		);
+	// Convert time string to minutes since midnight
+	const timeToMinutes = (time: string): number => {
+		const [hours, minutes] = time.split(':').map(Number);
+		return hours * 60 + minutes;
 	};
 
-	// Check if this is the first hour of a multi-hour class
-	const isFirstHourOfClass = (
-		day: keyof TimetableData,
-		slotStart: string,
-		subject: TimeSlot,
-	): boolean => {
-		return subject.startTime === slotStart;
+	// Convert minutes to grid row number (each 30 min = 1 row, starting from 8:00 AM)
+	const timeToGridRow = (time: string): number => {
+		const minutes = timeToMinutes(time);
+		const startMinutes = timeToMinutes('08:00');
+		return Math.floor((minutes - startMinutes) / 30) + 2; // +2 because row 1 is header
 	};
 
-	// Calculate how many hours a class spans
-	const calculateRowSpan = (startTime: string, endTime: string): number => {
-		const [startHour] = startTime.split(':').map(Number);
-		const [endHour] = endTime.split(':').map(Number);
-		return endHour - startHour;
+	// Calculate how many 30-minute slots a class spans
+	const calculateGridRowSpan = (startTime: string, endTime: string): number => {
+		const startMinutes = timeToMinutes(startTime);
+		const endMinutes = timeToMinutes(endTime);
+		return (endMinutes - startMinutes) / 30;
 	};
 
-	// Check if cell should be hidden (part of a multi-hour class)
-	const shouldHideCell = (
-		day: keyof TimetableData,
-		slotStart: string,
-	): boolean => {
-		const subject = getSubjectForSlot(day, slotStart);
-		if (!subject) return false;
-		return !isFirstHourOfClass(day, slotStart, subject);
+	// Get classes for a specific day
+	const getClassesForDay = (day: (typeof days)[number]): TimetableSlot[] => {
+		if (!timetable || !timetable[day]) return [];
+		return timetable[day] || [];
 	};
 
 	const handleSubjectClick = (subjectId: string) => {
 		navigate(`/subjects/${subjectId}`);
+	};
+
+	// Format time for display (e.g., "09:00" -> "9:00 AM")
+	const formatTime = (time: string): string => {
+		const [hours, minutes] = time.split(':').map(Number);
+		const period = hours >= 12 ? 'PM' : 'AM';
+		const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+		return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
 	};
 
 	if (loading) {
@@ -192,158 +131,173 @@ const Timetable: React.FC = () => {
 			{/* Timetable Grid */}
 			<div className="max-w-[1600px] mx-auto px-8 py-8">
 				<div className="overflow-x-auto">
-					<table className="w-full border-collapse">
-						<thead>
-							<tr>
-								<th className="sticky left-0 z-30 bg-gradient-to-br from-zinc-900 to-black border-2 border-zinc-800 p-4 min-w-[140px]">
-									<div className="text-center">
-										<Clock className="w-5 h-5 text-amber-500 mx-auto mb-1" />
-										<span className="text-xs text-zinc-500 font-medium">
-											TIME
-										</span>
-									</div>
-								</th>
-								{dayLabels.map((day, index) => (
-									<th
-										key={day}
-										className="bg-gradient-to-br from-zinc-900 to-black border-2 border-zinc-800 p-4 min-w-[180px]">
+					{/* Grid Container */}
+					<div
+						className="inline-grid min-w-full"
+						style={{
+							gridTemplateColumns: '140px repeat(6, minmax(180px, 1fr))',
+							gridTemplateRows: `60px repeat(${timeSlots.length}, 60px)`,
+						}}>
+						{/* Header Row */}
+						<div className="sticky left-0 z-30 bg-linear-to-br from-zinc-900 to-black border-2 border-zinc-800 rounded-lg flex items-center justify-center">
+							<div className="text-center">
+								<Clock className="w-5 h-5 text-amber-500 mx-auto mb-1" />
+								<span className="text-xs text-zinc-500 font-medium">TIME</span>
+							</div>
+						</div>
+
+						{dayLabels.map((day, index) => (
+							<div
+								key={day}
+								className="bg-linear-to-br from-zinc-900 to-black border-2 border-zinc-800 rounded-lg flex flex-col items-center justify-center">
+								<div className="text-base font-medium text-amber-400">
+									{day}
+								</div>
+								<div className="text-xs text-zinc-500 mt-1">
+									{days[index].slice(0, 3).toUpperCase()}
+								</div>
+							</div>
+						))}
+
+						{/* Time Labels Column */}
+						{timeSlots.map((time, index) => {
+							// Only show labels for hour marks (00 minutes)
+							const showLabel = time.endsWith(':00');
+
+							return (
+								<div
+									key={`time-${time}`}
+									className="sticky left-0 z-20 bg-zinc-950 border border-zinc-800 flex items-center justify-center"
+									style={{ gridRow: index + 2 }}>
+									{showLabel && (
 										<div className="text-center">
-											<div className="text-base font-medium text-amber-400">
-												{day}
-											</div>
-											<div className="text-xs text-zinc-500 mt-1">
-												{days[index].slice(0, 3).toUpperCase()}
+											<div className="text-sm font-medium text-white whitespace-nowrap">
+												{formatTime(time)}
 											</div>
 										</div>
-									</th>
-								))}
-							</tr>
-						</thead>
-						<tbody>
-							{timeSlots.map((timeSlot, rowIndex) => (
-								<tr key={timeSlot.start}>
-									{/* Time Label */}
-									<td className="sticky left-0 z-20 bg-zinc-950 border-2 border-zinc-800 p-3 text-center">
-										<div className="text-sm font-medium text-white whitespace-nowrap">
-											{timeSlot.label}
-										</div>
-									</td>
+									)}
+								</div>
+							);
+						})}
 
-									{/* Day Cells */}
-									{days.map((day) => {
-										// Check if this cell should be hidden (part of merged cell above)
-										if (shouldHideCell(day, timeSlot.start)) {
-											return null;
-										}
+						{/* Day Columns - Each day gets its own grid column */}
+						{days.map((day, dayIndex) => {
+							const classes = getClassesForDay(day);
 
-										const subject = getSubjectForSlot(day, timeSlot.start);
+							return (
+								<React.Fragment key={day}>
+									{/* Background cells for this day */}
+									{timeSlots.map((time, timeIndex) => (
+										<div
+											key={`bg-${day}-${time}`}
+											className="border border-zinc-800 bg-zinc-950/30"
+											style={{
+												gridColumn: dayIndex + 2,
+												gridRow: timeIndex + 2,
+											}}
+										/>
+									))}
 
-										if (!subject) {
-											// Empty cell or break
-											return (
-												<td
-													key={`${day}-${timeSlot.start}`}
-													className="border-2 border-zinc-800 p-3 bg-zinc-950/30">
-													<div className="h-20 flex items-center justify-center">
-														<span className="text-xs text-zinc-700">—</span>
-													</div>
-												</td>
-											);
-										}
-
-										const rowSpan = calculateRowSpan(
-											subject.startTime,
-											subject.endTime,
+									{/* Class cells overlaid on top */}
+									{classes.map((classSlot, classIndex) => {
+										const startRow = timeToGridRow(classSlot.startTime);
+										const rowSpan = calculateGridRowSpan(
+											classSlot.startTime,
+											classSlot.endTime,
 										);
-										const isLab = subject.subjectId.type === 'lab';
-										const isBreak = subject.subjectId.name
+
+										const isLab = classSlot.subjectId.type === 'lab';
+										const isBreak = classSlot.subjectId.name
 											.toLowerCase()
 											.includes('break');
 
 										// Break styling
 										if (isBreak) {
 											return (
-												<td
-													key={`${day}-${timeSlot.start}`}
-													rowSpan={rowSpan}
-													className="border-2 border-zinc-800 p-3 bg-zinc-900/50">
-													<div className="h-full flex flex-col items-center justify-center gap-2">
-														<Coffee className="w-6 h-6 text-zinc-600" />
-														<span className="text-sm font-medium text-zinc-500">
-															BREAK
-														</span>
-													</div>
-												</td>
+												<div
+													key={`class-${day}-${classIndex}`}
+													className="border-2 border-zinc-800 bg-zinc-900/50 flex flex-col items-center justify-center gap-2"
+													style={{
+														gridColumn: dayIndex + 2,
+														gridRow: `${startRow} / span ${rowSpan}`,
+													}}>
+													<Coffee className="w-6 h-6 text-zinc-600" />
+													<span className="text-sm font-medium text-zinc-500">
+														BREAK
+													</span>
+												</div>
 											);
 										}
 
 										return (
-											<td
-												key={`${day}-${timeSlot.start}`}
-												rowSpan={rowSpan}
-												className="border-2 border-zinc-800 p-0">
-												<motion.button
-													whileHover={{ scale: 1.01 }}
-													whileTap={{ scale: 0.99 }}
-													onClick={() =>
-														handleSubjectClick(subject.subjectId._id)
-													}
-													className={`w-full h-full p-4 text-left transition-all group relative ${
+											<motion.button
+												key={`class-${day}-${classIndex}`}
+												whileHover={{ scale: 1.01 }}
+												whileTap={{ scale: 0.99 }}
+												onClick={() =>
+													handleSubjectClick(classSlot.subjectId._id)
+												}
+												className={` p-4 text-left transition-all duration-200 group relative
+                           shadow-lg backdrop-blur-md border border-zinc-800 
+                          ${
 														isLab
-															? 'bg-purple-500/10 hover:bg-purple-500/20 border-l-4 border-purple-500'
-															: 'bg-amber-500/10 hover:bg-amber-500/20 border-l-4 border-amber-500'
-													}`}>
-													{/* Subtle glow effect on hover */}
-													<div
-														className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${
-															isLab ? 'bg-purple-500/5' : 'bg-amber-500/5'
-														}`}
-													/>
+															? 'bg-purple-600/25 hover:bg-purple-600/35 '
+															: 'bg-amber-500/25 hover:bg-amber-500/35 '
+													}`}
+												style={{
+													gridColumn: dayIndex + 2,
+													gridRow: `${startRow} / span ${rowSpan}`,
+												}}>
+												{/* Subtle glow effect on hover */}
+												<div
+													className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${
+														isLab ? 'bg-purple-500/5' : 'bg-amber-500/5'
+													}`}
+												/>
 
-													<div className="relative z-10 min-h-[80px] flex flex-col justify-center">
-														{/* Subject Name */}
-														<div className="flex items-start gap-2 mb-2">
-															{isLab ? (
-																<FlaskConical className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
-															) : (
-																<BookOpen className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-															)}
-															<h3 className="font-medium text-white text-sm leading-tight line-clamp-2">
-																{subject.subjectId.name}
-															</h3>
-														</div>
+												<div className="relative z-10 flex flex-col justify-center h-full">
+													{/* Subject Name */}
+													<div className="flex items-start gap-2 mb-2">
+														{isLab ? (
+															<FlaskConical className="w-4 h-4 text-purple-400 flex-shrink-0 mt-0.5" />
+														) : (
+															<BookOpen className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+														)}
+														<h3 className="font-medium text-white text-sm leading-tight line-clamp-2">
+															{classSlot.subjectId.name}
+														</h3>
+													</div>
 
-														{/* Subject Code */}
-														<p className="text-xs font-mono text-zinc-400 mb-2">
-															{subject.subjectId.code}
-														</p>
+													{/* Subject Code */}
+													<p className="text-xs font-mono text-zinc-400 mb-2">
+														{classSlot.subjectId.code}
+													</p>
 
-														{/* Time and Type Badge */}
-														<div className="flex items-center justify-between gap-2">
-															<div className="flex items-center gap-1 text-xs text-zinc-500">
-																<Clock className="w-3 h-3" />
-																<span>
-																	{subject.startTime} - {subject.endTime}
-																</span>
-															</div>
-															<span
-																className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-																	isLab
-																		? 'bg-purple-500/20 text-purple-400'
-																		: 'bg-amber-500/20 text-amber-400'
-																}`}>
-																{subject.subjectId.type.toUpperCase()}
+													{/* Time and Type Badge */}
+													<div className="flex items-center justify-between gap-2">
+														<div className="flex items-center gap-1 text-xs text-zinc-500">
+															<Clock className="w-3 h-3" />
+															<span>
+																{classSlot.startTime} - {classSlot.endTime}
 															</span>
 														</div>
+														<span
+															className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+																isLab
+																	? 'bg-purple-500/20 text-purple-400'
+																	: 'bg-amber-500/20 text-amber-400'
+															}`}>
+															{classSlot.subjectId.type.toUpperCase()}
+														</span>
 													</div>
-												</motion.button>
-											</td>
+												</div>
+											</motion.button>
 										);
 									})}
-								</tr>
-							))}
-						</tbody>
-					</table>
+								</React.Fragment>
+							);
+						})}
+					</div>
 				</div>
 
 				{/* Legend */}

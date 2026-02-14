@@ -87,6 +87,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 	logout: async () => {
 		await axios.post('/auth/logout');
 		set({ user: null });
+		window.location.href = '/dashboard';
 	},
 
 	checkAuth: async () => {

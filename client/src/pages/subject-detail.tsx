@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-	ArrowLeft,
+	
 	BookOpen,
 	FlaskConical,
 	Calendar,
@@ -10,62 +10,30 @@ import {
 	TrendingDown,
 	AlertCircle,
 	CheckCircle,
-	Clock,
+	
 	Target,
 	BarChart3,
 } from 'lucide-react';
-import axios from '../lib/axios';
+// import axios from '../lib/axios';
+import { useSubjectStore } from '../stores/useSubjectStore';
 
-interface Subject {
-	_id: string;
-	userId: string;
-	name: string;
-	code: string;
-	type: 'lecture' | 'lab';
-	createdAt: string;
-	updatedAt: string;
-	__v: number;
-}
 
-interface Analytics {
-	totalConductedHours: number;
-	attendedHours: number;
-	absentHours: number;
-	bunkedHours: number;
-	attendancePercentage: number;
-	weeklyScheduledHours: number;
-	minimumRequiredFor75Percent: number;
-	safeBunkHours: number;
-	hoursNeededToReach75Percent: number;
-}
 
-interface SubjectData {
-	subject: Subject;
-	analytics: Analytics;
-}
+
 
 const SubjectDetail: React.FC = () => {
 	const { subjectId } = useParams<{ subjectId: string }>();
 	const navigate = useNavigate();
 
-	const [data, setData] = useState<SubjectData | null>(null);
-	const [loading, setLoading] = useState<boolean>(true);
+	const {
+		selectedSubject: data,
+		loading,
+		getSubjectAnalytics,
+	} = useSubjectStore();
 
 	useEffect(() => {
-		const fetchData = async () => {
-			try {
-				setLoading(true);
-				const response = await axios.get(`/subjects/${subjectId}/analytics`);
-				setData(response.data);
-			} catch (error) {
-				console.error('Error fetching subject details:', error);
-			} finally {
-				setLoading(false);
-			}
-		};
-
 		if (subjectId) {
-			fetchData();
+			getSubjectAnalytics(subjectId);
 		}
 	}, [subjectId]);
 
@@ -83,10 +51,10 @@ const SubjectDetail: React.FC = () => {
 
 	const getProgressBarColor = (percentage: number): string => {
 		if (percentage >= 75)
-			return 'bg-gradient-to-r from-green-500 to-emerald-500';
+			return 'bg-linear-to-r from-green-500 to-emerald-500';
 		if (percentage >= 70)
-			return 'bg-gradient-to-r from-yellow-500 to-amber-500';
-		return 'bg-gradient-to-r from-red-500 to-rose-500';
+			return 'bg-linear-to-r from-yellow-500 to-amber-500';
+		return 'bg-linear-to-r from-red-500 to-rose-500';
 	};
 
 	if (loading) {
@@ -113,9 +81,8 @@ const SubjectDetail: React.FC = () => {
 						Subject not found
 					</h3>
 					<button
-						onClick={() => navigate('/timetable')}
-						className="text-amber-400 hover:text-amber-300 transition"
-					>
+						onClick={() => navigate(-1)}
+						className="text-amber-400 hover:text-amber-300 transition">
 						Go back to timetable
 					</button>
 				</div>
@@ -131,13 +98,7 @@ const SubjectDetail: React.FC = () => {
 			{/* Header */}
 			<div className="border-b border-zinc-900 bg-zinc-950/50 backdrop-blur-xl">
 				<div className="max-w-7xl mx-auto px-8 py-6">
-					<button
-						onClick={() => navigate('/timetable')}
-						className="flex items-center gap-2 text-zinc-400 hover:text-amber-400 transition mb-4"
-					>
-						<ArrowLeft className="w-5 h-5" />
-						Back to Timetable
-					</button>
+					
 
 					<div className="flex items-start gap-4">
 						<div
@@ -145,8 +106,7 @@ const SubjectDetail: React.FC = () => {
 								isLab
 									? 'bg-purple-500/10 border-purple-500/20'
 									: 'bg-amber-500/10 border-amber-500/20'
-							}`}
-						>
+							}`}>
 							{isLab ? (
 								<FlaskConical className="w-8 h-8 text-purple-400" />
 							) : (
@@ -163,8 +123,7 @@ const SubjectDetail: React.FC = () => {
 										isLab
 											? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
 											: 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-									}`}
-								>
+									}`}>
 									{subject.type.toUpperCase()}
 								</span>
 							</div>
@@ -178,7 +137,7 @@ const SubjectDetail: React.FC = () => {
 			<div className="max-w-7xl mx-auto px-8 py-12">
 				{/* Stats Overview Grid */}
 				<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-					<div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-xl p-4">
+					<div className="bg-linear-to-br from-zinc-900 to-black border border-zinc-800 rounded-xl p-4">
 						<div className="flex items-center gap-2 text-zinc-400 text-sm mb-2">
 							<BarChart3 className="w-4 h-4" />
 							<span>Total Conducted</span>
@@ -189,7 +148,7 @@ const SubjectDetail: React.FC = () => {
 						<div className="text-xs text-zinc-500 mt-1">hours</div>
 					</div>
 
-					<div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-xl p-4">
+					<div className="bg-linear-to-br from-zinc-900 to-black border border-zinc-800 rounded-xl p-4">
 						<div className="flex items-center gap-2 text-zinc-400 text-sm mb-2">
 							<CheckCircle className="w-4 h-4 text-green-400" />
 							<span>Attended</span>
@@ -200,7 +159,7 @@ const SubjectDetail: React.FC = () => {
 						<div className="text-xs text-zinc-500 mt-1">hours</div>
 					</div>
 
-					<div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-xl p-4">
+					<div className="bg-linear-to-br from-zinc-900 to-black border border-zinc-800 rounded-xl p-4">
 						<div className="flex items-center gap-2 text-zinc-400 text-sm mb-2">
 							<AlertCircle className="w-4 h-4 text-red-400" />
 							<span>Absent</span>
@@ -211,7 +170,7 @@ const SubjectDetail: React.FC = () => {
 						<div className="text-xs text-zinc-500 mt-1">hours</div>
 					</div>
 
-					<div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-xl p-4">
+					<div className="bg-linear-to-br from-zinc-900 to-black border border-zinc-800 rounded-xl p-4">
 						<div className="flex items-center gap-2 text-zinc-400 text-sm mb-2">
 							<Target className="w-4 h-4 text-orange-400" />
 							<span>Bunked</span>
@@ -226,7 +185,7 @@ const SubjectDetail: React.FC = () => {
 				{/* Attendance Overview */}
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
 					{/* Main Stats Card */}
-					<div className="lg:col-span-2 bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-8">
+					<div className="lg:col-span-2 bg-linear-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-8">
 						<h2 className="text-2xl font-light text-white mb-6">
 							Attendance Overview
 						</h2>
@@ -253,7 +212,10 @@ const SubjectDetail: React.FC = () => {
 										fill="none"
 										strokeDasharray={`${2 * Math.PI * 70}`}
 										strokeDashoffset={`${
-											2 * Math.PI * 70 * (1 - analytics.attendancePercentage / 100)
+											2 *
+											Math.PI *
+											70 *
+											(1 - analytics.attendancePercentage / 100)
 										}`}
 										className={
 											analytics.attendancePercentage >= 75
@@ -267,8 +229,7 @@ const SubjectDetail: React.FC = () => {
 								</svg>
 								<div className="absolute inset-0 flex flex-col items-center justify-center">
 									<div
-										className={`text-4xl font-light ${getAttendanceColor(analytics.attendancePercentage)}`}
-									>
+										className={`text-4xl font-light ${getAttendanceColor(analytics.attendancePercentage)}`}>
 										{analytics.attendancePercentage.toFixed(1)}%
 									</div>
 									<div className="text-xs text-zinc-500 mt-1">
@@ -322,7 +283,9 @@ const SubjectDetail: React.FC = () => {
 										width: `${Math.min(analytics.attendancePercentage, 100)}%`,
 									}}
 									transition={{ duration: 1, ease: 'easeOut' }}
-									className={getProgressBarColor(analytics.attendancePercentage)}
+									className={getProgressBarColor(
+										analytics.attendancePercentage,
+									)}
 								/>
 							</div>
 							<div className="flex justify-between text-xs text-zinc-500">
@@ -336,7 +299,7 @@ const SubjectDetail: React.FC = () => {
 					{/* Insights Card */}
 					<div className="space-y-6">
 						{analytics.attendancePercentage >= 75 ? (
-							<div className="bg-gradient-to-br from-green-900/20 to-black border border-green-500/30 rounded-2xl p-6">
+							<div className="bg-linear-to-br from-green-900/20 to-black border border-green-500/30 rounded-2xl p-6">
 								<div className="flex items-center gap-3 mb-4">
 									<CheckCircle className="w-6 h-6 text-green-400" />
 									<h3 className="text-lg font-medium text-white">
@@ -360,7 +323,7 @@ const SubjectDetail: React.FC = () => {
 								)}
 							</div>
 						) : analytics.totalConductedHours === 0 ? (
-							<div className="bg-gradient-to-br from-blue-900/20 to-black border border-blue-500/30 rounded-2xl p-6">
+							<div className="bg-linear-to-br from-blue-900/20 to-black border border-blue-500/30 rounded-2xl p-6">
 								<div className="flex items-center gap-3 mb-4">
 									<Calendar className="w-6 h-6 text-blue-400" />
 									<h3 className="text-lg font-medium text-white">
@@ -371,7 +334,9 @@ const SubjectDetail: React.FC = () => {
 									No classes conducted yet. Your attendance journey begins soon!
 								</p>
 								<div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-									<div className="text-xs text-zinc-500 mb-1">Weekly Schedule</div>
+									<div className="text-xs text-zinc-500 mb-1">
+										Weekly Schedule
+									</div>
 									<div className="text-2xl font-light text-blue-400">
 										{analytics.weeklyScheduledHours} hrs
 									</div>
@@ -379,7 +344,7 @@ const SubjectDetail: React.FC = () => {
 								</div>
 							</div>
 						) : (
-							<div className="bg-gradient-to-br from-red-900/20 to-black border border-red-500/30 rounded-2xl p-6">
+							<div className="bg-linear-to-br from-red-900/20 to-black border border-red-500/30 rounded-2xl p-6">
 								<div className="flex items-center gap-3 mb-4">
 									<AlertCircle className="w-6 h-6 text-red-400" />
 									<h3 className="text-lg font-medium text-white">
@@ -390,7 +355,9 @@ const SubjectDetail: React.FC = () => {
 									Your attendance is below 75%. Attend more classes!
 								</p>
 								<div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-									<div className="text-xs text-zinc-500 mb-1">Hours Required</div>
+									<div className="text-xs text-zinc-500 mb-1">
+										Hours Required
+									</div>
 									<div className="text-2xl font-light text-red-400">
 										{analytics.hoursNeededToReach75Percent}
 									</div>
@@ -401,7 +368,7 @@ const SubjectDetail: React.FC = () => {
 							</div>
 						)}
 
-						<div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-6">
+						<div className="bg-linear-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-6">
 							<div className="flex items-center gap-3 mb-4">
 								<Target className="w-6 h-6 text-amber-400" />
 								<h3 className="text-lg font-medium text-white">Quick Stats</h3>
@@ -414,14 +381,19 @@ const SubjectDetail: React.FC = () => {
 									</span>
 								</div>
 								<div className="flex items-center justify-between">
-									<span className="text-zinc-400 text-sm">Min. Required (75%)</span>
+									<span className="text-zinc-400 text-sm">
+										Min. Required (75%)
+									</span>
 									<span className="text-amber-400 font-medium">
 										{analytics.minimumRequiredFor75Percent} hrs
 									</span>
 								</div>
 								<div className="flex items-center justify-between">
 									<span className="text-zinc-400 text-sm">Attendance Rate</span>
-									<span className={getAttendanceColor(analytics.attendancePercentage)}>
+									<span
+										className={getAttendanceColor(
+											analytics.attendancePercentage,
+										)}>
 										{analytics.attendancePercentage >= 75 ? (
 											<TrendingUp className="w-4 h-4" />
 										) : (
@@ -436,7 +408,7 @@ const SubjectDetail: React.FC = () => {
 
 				{/* Additional Info */}
 				{analytics.totalConductedHours > 0 && (
-					<div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-8">
+					<div className="bg-linear-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-8">
 						<h2 className="text-2xl font-light text-white mb-6">
 							Detailed Breakdown
 						</h2>
@@ -449,8 +421,7 @@ const SubjectDetail: React.FC = () => {
 									<div className="flex justify-between items-center p-3 bg-zinc-950/50 rounded-lg">
 										<span className="text-zinc-300">Attendance Rate</span>
 										<span
-											className={`font-medium ${getAttendanceColor(analytics.attendancePercentage)}`}
-										>
+											className={`font-medium ${getAttendanceColor(analytics.attendancePercentage)}`}>
 											{analytics.attendancePercentage.toFixed(2)}%
 										</span>
 									</div>

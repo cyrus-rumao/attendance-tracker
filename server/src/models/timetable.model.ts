@@ -27,7 +27,7 @@ export interface ITimetable extends Document {
 const slotSchema = new Schema<ITimetableSlot>(
 	{
 		subjectId: {
-			type: Schema.Types.ObjectId,
+			type: Schema.Types.Mixed,
 			ref: 'Subject',
 			required: true,
 		},
